@@ -1,0 +1,30 @@
+# SECRETS - never commit these.
+#
+# kalshi_private_key.pem is the RSA key that signs your orders: anyone holding
+# it can trade on your account. .env carries the key id and the Pyth key.
+# A private repo is not protection either, because once a secret is in git
+# history it stays there even after you delete the file.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+
+# Trading history. Not secret, but these are records rather than code, and
+# trades.jsonl grows without limit.
+log/
+debug/
+*.jsonl
+
+# Node
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

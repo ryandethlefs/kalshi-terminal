@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15-minute desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --base:#101418;
+    --panel:#171c23;
+    --raised:#1e242c;
+    --line:#2a323c;
+    --line-soft:#212832;
+    --text:#d6dde6;
+    --dim:#78848f;
+    --faint:#4f5a66;
+    --act:#6fb5a0;
+    --act-deep:#254a42;
+    --cut:#cf7d63;
+    --cut-deep:#4a2e24;
+    --flat:#5b6672;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--base);
+    color:var(--text);
+    font-family:var(--sans);
+    font-variant-numeric:tabular-nums;
+    font-size:15px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 64px}
+
+  /* ---- status bar ---- */
+  .bar{
+    display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    padding:10px 0 14px;border-bottom:1px solid var(--line);
+  }
+  .mark{font-weight:600;letter-spacing:-.01em}
+  .mark span{color:var(--dim);font-weight:400}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--flat);display:inline-block;margin-right:7px;vertical-align:1px}
+  .dot.live{background:var(--act)}
+  .dot.dead{background:var(--cut)}
+  .status{color:var(--dim);font-size:13px}
+  .bankroll{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px}
+  input,select{
+    background:var(--raised);border:1px solid var(--line);color:var(--text);
+    font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:14px;
+    padding:6px 9px;border-radius:5px;
+  }
+  input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--act);outline-offset:2px}
+  input[type=number]{width:96px}
+
+  .botbar{
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+    padding:12px 15px;margin-bottom:14px;border-radius:7px;
+    background:var(--panel);border:1px solid var(--line-soft);font-size:13px;
+  }
+  .botbar.armed{border-color:var(--act-deep)}
+  .botbar.halted{border-color:var(--cut-deep)}
+  .botbar b{color:var(--text);font-weight:600}
+  .botbar .lbl{color:var(--dim)}
+  button.kill{background:var(--cut-deep);border-color:var(--cut);color:var(--cut);margin-left:auto}
+  button.kill:hover{background:var(--cut);color:#fff}
+  .note{
+    color:var(--faint);font-size:12.5px;margin:12px 0 20px;max-width:62ch;
+  }
+
+  /* ---- board ---- */
+  .row{
+    position:relative;overflow:hidden;
+    border:1px solid var(--line-soft);border-radius:7px;
+    margin-bottom:9px;background:var(--panel);
+  }
+  .drain{
+    position:absolute;inset:0 auto 0 0;width:0%;
+    background:var(--raised);
+    transition:width .4s linear;
+    pointer-events:none;
+  }
+  @media (prefers-reduced-motion:reduce){.drain{transition:none}}
+  .row.act{border-color:var(--act-deep)}
+  .row.cut{border-color:var(--cut-deep)}
+  .row.crypto .inner{
+    grid-template-columns:150px 82px 1fr 1fr 1fr 190px;
+  }
+  @media (max-width:1100px){ .row.crypto .inner{grid-template-columns:1fr 1fr;gap:12px} }
+  .inner{
+    position:relative;display:grid;
+    grid-template-columns:150px 92px 1fr 1fr 210px;
+    gap:16px;align-items:center;padding:13px 15px;
+  }
+  .name{font-weight:600}
+  .name small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;letter-spacing:-.02em}
+  .clock{font-size:22px;font-weight:500;letter-spacing:-.02em}
+  .clock.low{color:var(--cut)}
+  .field{font-size:13px;color:var(--dim);display:flex;flex-direction:column;gap:2px}
+  .field b{color:var(--text);font-weight:500}
+  .up{color:var(--act)}
+  .down{color:var(--cut)}
+  .call{text-align:right}
+  .chip{
+    display:inline-block;padding:4px 11px;border-radius:5px;
+    font-size:13px;font-weight:600;letter-spacing:.01em;
+    background:var(--raised);color:var(--flat);border:1px solid var(--line);
+  }
+  .chip.buy{background:var(--act-deep);color:var(--act);border-color:var(--act)}
+  .chip.exit{background:var(--cut-deep);color:var(--cut);border-color:var(--cut)}
+  .why{font-size:12px;color:var(--faint);margin-top:4px;line-height:1.35}
+
+  /* ---- positions ---- */
+  h2{font-size:15px;font-weight:600;margin:34px 0 12px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{
+    background:var(--raised);border:1px solid var(--line);color:var(--text);
+    font-family:var(--sans);font-size:14px;padding:6px 13px;border-radius:5px;cursor:pointer;
+  }
+  button:hover{border-color:var(--flat)}
+  button.ghost{border:none;background:none;color:var(--faint);padding:4px 7px}
+  button.ghost:hover{color:var(--cut)}
+  .pos{
+    display:grid;grid-template-columns:170px 1fr 1fr 210px 30px;gap:16px;align-items:center;
+    padding:12px 15px;background:var(--panel);border:1px solid var(--line-soft);
+    border-radius:7px;margin-bottom:8px;
+  }
+  .pos.exit{border-color:var(--cut-deep)}
+  .empty{color:var(--faint);font-size:13.5px;padding:14px 0}
+
+  @media (max-width:820px){
+    .inner,.pos{grid-template-columns:1fr 1fr;gap:12px}
+    .call{text-align:left;grid-column:1/-1}
+  }
+  .sectionHead { display:flex; align-items:baseline; gap:12px; margin:26px 2px 10px; }
+  .sectionHead h2 { font-size:15px; font-weight:650; letter-spacing:.02em; margin:0; }
+  .sectionHead small { color:var(--dim); font-size:11.5px; }
+  .pos.losing { border-color: rgba(220,90,80,.28); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bar">
+    <div class="mark">15-minute desk <span>· Kalshi</span></div>
+    <div class="status" id="status"><span class="dot"></span>connecting</div>
+    <label class="bankroll">Bankroll
+      <input type="number" id="bankroll" value="1000" min="50" step="50">
+    </label>
+  </div>
+
+  <div id="botbar"></div>
+  <div id="board"></div>
+
+  <div id="cryptoWrap" style="display:none">
+    <div class="sectionHead">
+      <h2>Crypto</h2>
+      <small>Coinbase spot &middot; settles on a 60 second average &middot; runs 24/7</small>
+    </div>
+    <div id="cryptoBoard"></div>
+  </div>
+
+  <div class="sectionHead">
+    <h2>Open positions</h2>
+    <small>live from Kalshi</small>
+  </div>
+  <div id="positions"></div>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmtTime = (s) => {
+  if (s == null || !isFinite(s) || s < 0) return "--:--";
+  const m = Math.floor(s / 60), r = Math.floor(s % 60);
+  return `${m}:${String(r).padStart(2, "0")}`;
+};
+const c1 = (v) => (v == null ? "--" : (v * 100).toFixed(1) + "¢");
+const c0 = (v) => (v == null ? "--" : Math.round(v * 100) + "¢");
+const num = (v, d = 2) => (v == null ? "--" : Number(v).toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d}));
+
+let positions = [];
+try { positions = JSON.parse(localStorage.getItem("kx-positions") || "[]"); } catch {}
+const savePositions = () => localStorage.setItem("kx-positions", JSON.stringify(positions));
+
+let latest = null;
+
+/* ---------- rendering ---------- */
+
+function chipClass(call) {
+  if (call.startsWith("BUY")) return "chip buy";
+  if (call === "CASH OUT") return "chip exit";
+  return "chip";
+}
+
+function renderBoard(data) {
+  renderRows($("board"), data.rows);
+  renderRows($("cryptoBoard"), data.cryptoRows || [], true);
+  const wrap = $("cryptoWrap");
+  if (wrap) wrap.style.display = (data.cryptoRows || []).length ? "" : "none";
+}
+
+function renderRows(board, rows, isCrypto) {
+  if (!board) return;
+  board.innerHTML = "";
+  for (const r of rows) {
+    const m = r.market;
+    const a = r.action;
+    const el = document.createElement("div");
+    el.className = "row" + (isCrypto ? " crypto" : "") + (a.call.startsWith("BUY") ? " act" : "");
+    el.dataset.close = m ? m.closeTime : "";
+
+    const gap = m && m.gap != null ? m.gap : null;
+    const gapCls = gap == null ? "" : gap >= 0 ? "up" : "down";
+
+    let detail = "";
+    if (a.call.startsWith("BUY") && a.contracts > 0) {
+      detail = `${a.contracts} contracts at ${a.limitCents}¢ limit · edge ${a.evCents.toFixed(1)}¢ · fee $${a.fee.toFixed(2)}`;
+    } else {
+      detail = a.reason || "";
+    }
+
+    el.innerHTML = `
+      <div class="drain"></div>
+      <div class="inner">
+        <div class="name">${r.label}<small>${m ? m.contractTicker : "no open window"}</small></div>
+        <div class="clock" data-clock>${m ? fmtTime(m.secondsLeft) : "--:--"}</div>
+        <div class="field">
+          <span>reference <b>${m && m.reference ? num(m.reference, 3) : "--"}</b></span>
+          <span>now <b class="${gapCls}">${m && m.spot ? num(m.spot, 3) : "--"}</b>
+            ${gap != null ? `<b class="${gapCls}">(${gap >= 0 ? "+" : ""}${num(gap, 3)})</b>` : ""}</span>
+        </div>
+        <div class="field">
+          <span>fair <b>${m && m.fair != null ? c1(m.fair) : "--"}</b> yes
+            &nbsp;book <b>${m ? c0(m.yesBid) : "--"} / ${m ? c0(m.yesAsk) : "--"}</b></span>
+          <span>moves <b>${m && m.sigmaPerMin != null ? (m.sigmaPerMin * 100).toFixed(3) + "%" : "--"}</b> a minute
+            ${m && m.volSamples ? `<b>(${Math.round((m.volSpanSec || 0) / 60)}m data)</b>` : ""}</span>
+        </div>
+        ${isCrypto && m ? `<div class="field">
+          <span>settles on a <b>60s average</b>${m.banked ? `, <b>${m.banked}</b> of 60 banked` : ""}</span>
+          <span>${m.averagingAdvantage && isFinite(m.averagingAdvantage)
+            ? `a point-close model would overstate the spread <b>${m.averagingAdvantage.toFixed(2)}x</b>`
+            : ""}</span>
+        </div>` : ""}
+        <div class="call">
+          <span class="${chipClass(a.call)}">${a.call}</span>
+          <div class="why">${detail}</div>
+        </div>
+      </div>`;
+    board.appendChild(el);
+  }
+}
+
+function renderPositions(data) {
+  const box = $("positions");
+
+  if (data.positionsError) {
+    box.innerHTML = `<div class="empty">Could not read positions from Kalshi: ${data.positionsError}</div>`;
+    return;
+  }
+  const held = data.held || [];
+  if (!held.length) {
+    box.innerHTML = `<div class="empty">Nothing open right now.</div>`;
+    return;
+  }
+
+  box.innerHTML = "";
+  for (const p of held) {
+    const el = document.createElement("div");
+    const up = p.unrealised;
+    el.className = "pos" + (up != null && up < 0 ? " losing" : "");
+    const cls = up == null ? "" : up >= 0 ? "up" : "down";
+    const pct = p.pctMove == null ? null : p.pctMove * 100;
+
+    el.innerHTML = `
+      <div class="name">${p.label || p.ticker} ${p.side}
+        <small>${p.contracts} at ${p.entry != null ? (p.entry * 100).toFixed(0) + "¢" : "--"}</small></div>
+      <div class="field">
+        <span>bid now <b>${p.bid != null ? (p.bid * 100).toFixed(0) + "¢" : "--"}</b>
+          ${pct != null ? `<b class="${cls}">(${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%)</b>` : ""}</span>
+        <span>fair <b>${p.fair != null ? (p.fair * 100).toFixed(1) + "¢" : "--"}</b></span>
+      </div>
+      <div class="field">
+        <span>cost <b>$${p.exposureDollars.toFixed(2)}</b></span>
+        <span>worth now <b class="${cls}">${p.markValue != null ? "$" + p.markValue.toFixed(2) : "--"}</b></span>
+      </div>
+      <div class="call">
+        <span class="${cls}" style="font-weight:650">${
+          up != null ? (up >= 0 ? "+" : "") + "$" + up.toFixed(2) : "--"
+        }</span>
+        <div class="why">${
+          p.secondsLeft != null ? fmtTime(p.secondsLeft) + " to settlement" : "window closed"
+        }${p.restingOrders ? ` &middot; ${p.restingOrders} resting` : ""}</div>
+      </div>`;
+    box.appendChild(el);
+  }
+}
+
+function renderBot(data) {
+  const b = data.bot;
+  if (!b) return;
+  const el = $("botbar");
+  const lost = b.realizedToday < 0 ? -b.realizedToday : 0;
+  const halted = b.killed || lost >= b.limits.dailyLossLimit;
+  const mode = !b.live
+    ? `<b>dry run</b> <span class="lbl">logging orders, sending none</span>`
+    : b.killed
+    ? `<b class="down">stopped</b> <span class="lbl">kill switch pulled</span>`
+    : halted
+    ? `<b class="down">stopped</b> <span class="lbl">daily loss limit reached</span>`
+    : b.armed
+    ? `<b class="up">trading live</b>`
+    : `<b>disarmed</b>`;
+
+  el.className = "botbar" + (b.live && b.armed && !halted ? " armed" : halted ? " halted" : "");
+  el.innerHTML = `
+    <span>${mode}</span>
+    <span class="lbl">today <b class="${b.realizedToday >= 0 ? "up" : "down"}">${b.realizedToday >= 0 ? "+" : ""}$${b.realizedToday.toFixed(2)}</b>
+      of $${b.limits.dailyLossLimit.toFixed(2)} allowed</span>
+    <span class="lbl">open <b>${b.openPositions.length}/${b.limits.maxOpenPositions}</b></span>
+    <span class="lbl">max per trade <b>$${b.limits.maxStakePerTrade.toFixed(2)}</b></span>
+    ${b.calibration ? `<span class="lbl">record <b>${b.calibration.wins}/${b.calibration.trades}</b>
+      <b class="${b.calibration.totalPnl >= 0 ? "up" : "down"}">${b.calibration.totalPnl >= 0 ? "+" : ""}$${b.calibration.totalPnl.toFixed(2)}</b></span>` : ""}
+    ${b.holdToSettlement ? `<span class="lbl">holding to settlement</span>` : ""}
+    ${b.awaitingSettlement ? `<span class="lbl">awaiting result <b>${b.awaitingSettlement}</b></span>` : ""}
+    ${b.shadow && b.shadow.windows ? `<span class="lbl">scored <b>${b.shadow.windows}</b> windows${b.shadow.verdict ? ": " + b.shadow.verdict.text : ""}</span>` : ""}
+    ${b.lastAction ? `<span class="lbl">${b.lastAction}</span>` : ""}
+    ${b.lastError ? `<span class="down">${b.lastError}</span>` : ""}
+    <button class="kill" id="killbtn">Stop trading</button>`;
+
+  const kb = $("killbtn");
+  if (kb) kb.addEventListener("click", async () => {
+    await fetch("/api/bot/kill", { method: "POST" });
+    poll();
+  });
+}
+
+function renderStatus(data) {
+  const age = (Date.now() - data.kalshiLastOk) / 1000;
+  const el = $("status");
+  if (data.demo) {
+    el.innerHTML = `<span class="dot live"></span>demo mode, these numbers are invented`;
+    return;
+  }
+  if (data.pythError) {
+    el.innerHTML = `<span class="dot dead"></span>${data.pythError}`;
+    return;
+  }
+  if (!data.credentialsLoaded) {
+    el.innerHTML = `<span class="dot dead"></span>no API credentials loaded`;
+  } else if (!data.kalshiLastOk) {
+    el.innerHTML = `<span class="dot dead"></span>waiting on first Kalshi response`;
+  } else if (age > 20) {
+    el.innerHTML = `<span class="dot dead"></span>Kalshi stale, ${age.toFixed(0)}s since last update`;
+  } else {
+    el.innerHTML = `<span class="dot live"></span>live, updated ${age.toFixed(0)}s ago`;
+  }
+}
+
+/* ---------- clock ticks between polls ---------- */
+
+function tick() {
+  document.querySelectorAll(".row").forEach((row) => {
+    const close = row.dataset.close;
+    const clock = row.querySelector("[data-clock]");
+    if (!close || !clock) return;
+    const left = (new Date(close).getTime() - Date.now()) / 1000;
+    clock.textContent = fmtTime(left);
+    clock.classList.toggle("low", left < 60);
+    const drain = row.querySelector(".drain");
+    if (drain) drain.style.width = `${Math.max(0, Math.min(100, (1 - left / 900) * 100))}%`;
+  });
+}
+
+/* ---------- polling ---------- */
+
+async function poll() {
+  try {
+    const q = new URLSearchParams({
+      bankroll: $("bankroll").value || "1000",
+      positions: JSON.stringify(positions),
+    });
+    const res = await fetch(`/api/board?${q}`);
+    const data = await res.json();
+    latest = data;
+    renderStatus(data);
+    renderBot(data);
+    renderBoard(data);
+    renderPositions(data);
+    tick();
+  } catch (err) {
+    $("status").innerHTML = `<span class="dot dead"></span>server unreachable`;
+  }
+}
+
+$("bankroll").addEventListener("change", poll);
+
+poll();
+setInterval(poll, 1000);
+setInterval(tick, 250);
+</script>
+</body>
+</html>

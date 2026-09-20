@@ -1,0 +1,20 @@
+{
+  "name": "kalshi-15m-terminal",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Live terminal for Kalshi 15-minute up/down markets: fair value, fee-adjusted edge, sizing, and exit calls.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "live": "node --env-file=.env server.js --live",
+    "demo": "node server.js --demo",
+    "test": "node test.js && node test-board.js && node test-risk.js && node test-execution.mjs && node test-lifecycle.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
