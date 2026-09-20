@@ -62,7 +62,7 @@
     "volWindowSec": 900,
     "minVolSamples": 30,
     "minSecondsLeft": 20,
-    "maxSecondsLeft": 300,
+    "maxSecondsLeft": 870,
     "minEdgeCents": 1.5,
     "exitEdgeCents": 1.0,
     "maxSpreadCents": 6,
@@ -71,8 +71,7 @@
     "minVolSpanSec": 450,
     "maxEdgeCents": 8,
     "shadowSnapshotAtSec": 300,
-    "_shadowSnapshotAtSec": "Every window is scored, traded or not: when this many seconds remain the model's fair value and the market's price are recorded, and once the window settles the outcome is written beside them. Two series produce roughly 96 windows a day, which is the only cheap way to find out whether the fair values predict anything.",
-    "_maxSecondsLeft": "No entries until this many seconds remain, so trading happens only in the closing stretch of each window. Shortens exposure and cuts fee churn. It does not reduce sensitivity to a wrong volatility estimate: that error is the same at 60 seconds as at 800."
+    "_shadowSnapshotAtSec": "Every window is scored, traded or not: when this many seconds remain the model's fair value and the market's price are recorded, and once the window settles the outcome is written beside them. Two series produce roughly 96 windows a day, which is the only cheap way to find out whether the fair values predict anything."
   },
   "bot": {
     "_comment": "The bot sends nothing unless you start the server with --live. Sizes are in dollars.",
@@ -85,56 +84,36 @@
     "maxEntriesPerWindow": 0,
     "_maxEntriesPerWindow": "How many times the bot may enter the same 15-minute window. 0 means unlimited, which lets it scalp a moving market repeatedly. Set it to 1 or 2 if fees are outrunning the edge.",
     "holdToSettlement": false,
-    "minFairToEnter": 0.8,
+    "minFairToEnter": 0.78,
     "takeProfitCents": 90,
-    "stopLossCents": null,
-    "holdIfSecondsLeft": 20,
+    "stopLossCents": 10,
+    "holdIfSecondsLeft": 120,
     "_strategy": "Only enter when fair value on the side being bought is at least minFairToEnter. Take profit once the bid reaches takeProfitCents. Cut the position if the bid falls stopLossCents below the entry. Inside the last holdIfSecondsLeft seconds, stop managing and ride it to settlement, because exiting that late just pays a fee to avoid a coin flip you are already holding.",
-    "maxEntryCents": 90,
+    "maxEntryCents": null,
     "minGainCents": 0,
     "_exitRules": "Tiered. A position entered with fair value below takeProfitBelowFair takes profit at takeProfitCents, because a 12c gain is worth a second fee. Above that it rides to settlement, where a 7c gain is not. Either way it is cut if the bid falls stopLossPercent below the entry. holdIfSecondsLeft is 20 rather than 120 so the stop is actually live inside a 5 minute entry window.",
-    "takeProfitBelowFair": 0.85,
-    "stopLossPercent": 55,
+    "takeProfitBelowFair": null,
+    "stopLossPercent": null,
     "_maxEntryCents": "At 93c you risk 19c to win 7c and need to be right 73% of the time. The fee is small up there but the asymmetry is not, and it is the regime where this model has been most overconfident. Set null to remove the ceiling.",
     "cutConcessionCents": 3,
     "maxCutConcessionCents": 15,
     "_cutting": "Exits are immediate-or-cancel limits. Offering at exactly the bid last seen means any tick against you cancels the order, so during a fast move the stop fires, fails, and refires while the position keeps falling. A cut therefore offers cutConcessionCents below the bid, and widens by a cent on each failed attempt up to maxCutConcessionCents. Getting out matters more than the last few cents of the exit price.",
     "maxTotalLoss": 10,
     "_maxTotalLoss": "A ceiling on cumulative realised losses that does NOT reset at midnight. The daily stop assumes someone is watching; running overnight means a fresh limit becomes available while you sleep. This one halts for good until you raise it deliberately. Set null to disable.",
-    "metals": {
-      "stopLossPercent": 55,
-      "maxOpenPositions": 1,
-      "maxTotalExposure": 2.5,
-      "_note": "55% stop, same as crypto.",
-      "maxSecondsLeft": 300,
-      "_entryWindow": "Unchanged at 5 minutes. Metals settle on a single closing print, so there is no average to partially know, and a wrong volatility estimate costs the same at 60 seconds left as at 800. Entering later would not make the model any better here."
-    },
-    "crypto": {
-      "stopLossPercent": 55,
-      "maxEntryCents": 85,
-      "maxOpenPositions": 1,
-      "maxTotalExposure": 2.5,
-      "_note": "55% stop. Entry capped lower than metals because a 90c entry on something that gaps is the worst of both worlds.",
-      "maxSecondsLeft": 90,
-      "minSecondsLeft": 8,
-      "_entryWindow": "Entries only in the last 90 seconds. Crypto settles on the mean of 60 prices across the final minute, and that averaging is the only structural advantage this model has. At 5 minutes out the averaged and naive models agree to within half a cent, so there is nothing to exploit; at 60 seconds the gap is 9 cents and at 30 seconds 27. Expect fewer fills: the closing minute is a settlement auction and the book converges hard to 99 or 1.",
-      "maxEdgeCentsBanked": 45,
-      "_guards": "The edge ceiling and the near-certainty guard both relax as settlement samples bank. They exist because on metals a huge edge means the volatility estimate has broken. On a 60-second average with most samples already fixed, a large disagreement with a book priced off the last print is the expected result, not a symptom, so the guards would otherwise refuse exactly the trades the averaging model exists to find. Below 30 banked samples they apply in full."
-    },
-    "_split": "bot.metals and bot.crypto override the shared settings above for their own series. Position slots and exposure are counted separately per group, so crypto running 24/7 cannot starve gold and silver, which only trade on weekdays."
+    "_reconstructed": "Restored to the settings that were running overnight 17-18 Sep, when the account went from about $41.45 to $49.56. Reconstructed from the trade log rather than a backup, so the values marked uncertain below may be slightly off: entries ranged 73c to 98c (so no entry cap), the lowest predictedFair was about 0.78 (so that was the floor), exits clustered at 90c and above (so a 90c target with no tiering), and stop-outs landed 18-36c below entry, consistent with a 10c trigger plus the widening exit concession."
   },
   "cryptoSeries": [
     {
       "ticker": "KXBTC15M",
       "label": "Bitcoin",
       "product": "BTC-USD",
-      "enabled": true
+      "enabled": false
     },
     {
       "ticker": "KXETH15M",
       "label": "Ethereum",
       "product": "ETH-USD",
-      "enabled": true
+      "enabled": false
     },
     {
       "ticker": "KXSOL15M",

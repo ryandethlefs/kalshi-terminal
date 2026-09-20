@@ -28,3 +28,8 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Impeccable (reinstall with: npx impeccable skills install)
+.agent/
+.claude/
+.gemini/
