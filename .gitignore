@@ -33,3 +33,8 @@ Thumbs.db
 .agent/
 .claude/
 .gemini/
+
+# Impeccable (reinstall with: npx impeccable skills install)
+.agent/
+.claude/
+.gemini/
